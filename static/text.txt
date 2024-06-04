@@ -1,0 +1,117 @@
+below is my ml model code which is present in colab notebook
+import os
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+from tensorflow.keras import layers, models
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
+import matplotlib.pyplot as plt
+import cv2
+def preprocess_image(image):
+    grayscale_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY).astype(np.uint8)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    clahe_image = clahe.apply(grayscale_image)
+    resized_image = cv2.resize(clahe_image, (224,224))  # Resize to match ResNet50 input size
+    resized_image = resized_image[..., np.newaxis]  # Add channel dimension
+    resized_image = resized_image / 255.0  # Normalize pixel values
+    return resized_image
+
+# Load training images
+def load_images_from_folder(folder_path):
+    images = []
+    for filename in os.listdir(folder_path):
+        img = load_img(os.path.join(folder_path, filename), target_size=(100, 100))
+        img_array = img_to_array(img)
+        images.append(img_array)
+    return images
+
+original_train_images = load_images_from_folder('/content/Dataset/train_images/train_images')
+train_labels = pd.read_csv('/content/Dataset/train_1.csv')['diagnosis'].values
+
+# Preprocess training images
+preprocessed_train_images = []
+for image in original_train_images:
+    clahe_image = preprocess_image(image)
+    preprocessed_train_images.append(clahe_image)
+preprocessed_train_images_array = np.array(preprocessed_train_images)
+preprocessed_train_images_array= preprocessed_train_images_array[..., np.newaxis]  # Add channel dimension
+preprocessed_train_images_array=  preprocessed_train_images_array/ 255.0  # Normalize pixel values
+# Build CNN Model
+model = models.Sequential([
+    layers.Conv2D(32, (3, 3), activation='relu', input_shape=(224, 224, 1)),
+    layers.MaxPooling2D((2, 2)),
+    layers.Conv2D(64, (3, 3), activation='relu'),
+    layers.MaxPooling2D((2, 2)),
+    layers.Conv2D(64, (3, 3), activation='relu'),
+    layers.Flatten(),
+    layers.Dropout(0.5),  # Add dropout layer
+    layers.Dense(64, activation='relu'),
+    layers.BatchNormalization(),  # Add batch normalization layer
+    layers.Dense(5, activation='softmax')  # Assuming 5 levels of DR
+])
+
+model.compile(optimizer='adam',
+              loss='sparse_categorical_crossentropy',
+              metrics=['accuracy'])
+
+# Train the Model
+history = model.fit(preprocessed_train_images_array, train_labels, epochs=7, validation_split=0.2)
+from sklearn.metrics import classification_report
+# Load test images
+original_test_images = load_images_from_folder('/content/Dataset/test_images/test_images')
+test_labels = pd.read_csv('/content/Dataset/test.csv')['diagnosis'].values
+
+# Preprocess test images
+preprocessed_test_images = []
+for image in original_test_images:
+    clahe_image = preprocess_image(image)
+    preprocessed_test_images.append(clahe_image)
+
+test_images_array = np.array(preprocessed_test_images)
+test_images_array = test_images_array[..., np.newaxis]  # Add channel dimension
+test_images_array = test_images_array / 255.0  # Normalize pixel values
+
+# Evaluate Model Performance on Test Dataset
+test_loss, test_accuracy = model.evaluate(test_images_array, test_labels)
+print("Test Loss:", test_loss)
+print("Test Accuracy:", test_accuracy)
+
+# Predict classes for test images
+predictions = model.predict(test_images_array)
+predicted_classes = np.argmax(predictions, axis=1)
+
+# Generate classification report
+report = classification_report(test_labels, predicted_classes)
+print(report)
+# Define function to display images
+def display_images(original_image, equalized_image):
+    plt.figure(figsize=(8, 4))
+    plt.subplot(1, 2, 1)
+    plt.imshow(cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB))
+    plt.title('Original')
+    plt.axis('off')
+    plt.subplot(1, 2, 2)
+    plt.imshow(equalized_image, cmap='gray')
+    plt.title('Equalized')
+    plt.axis('off')
+    plt.tight_layout()
+    plt.show()
+import cv2
+# Predict DR level of new image
+new_image_path = '/content/IDRiD_158.jpg'
+original_image = cv2.imread(new_image_path)
+
+# Preprocess the image
+equalized_image = preprocess_image(original_image)
+
+# Display the preprocessed image
+display_images(original_image, equalized_image)
+
+prediction = model.predict(np.expand_dims(equalized_image, axis=0))
+print(prediction)
+predicted_class_index = np.argmax(prediction)
+
+print("Predicted DR Level:", predicted_class_index)
+
+this code predicts DR Level of new image and displays its image and preprocessed image 
+Now modify my flask application code so that the image which we upload should be given to model and model displays both original input image and preprocessed images along with that it prints DR level
