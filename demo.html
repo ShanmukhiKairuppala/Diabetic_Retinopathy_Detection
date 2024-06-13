@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Diabetic Retinopathy Detection</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='display.css') }}">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            display: flex;
+            width: 90%;
+            margin: 20px;
+        }
+
+        .left-side {
+            flex: 3;
+            text-align: center;
+        }
+
+        .right-side {
+            flex: 1;
+            text-align: left;
+            padding-left: 20px;
+        }
+
+        h1 {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px 0;
+            margin: 0;
+            border-bottom: 5px solid #388E3C;
+            text-align: center;
+        }
+
+        h2 {
+            color: #4CAF50;
+            margin-top: 30px;
+        }
+
+        .image-container {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px;
+            border: 2px solid #ddd;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 5px;
+        }
+
+        p {
+            font-size: 25px;
+            color: #555;
+        }
+
+        .result-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .prediction {
+            margin-top: 10px;
+            font-size: 25px;
+            color: #333;
+        }
+
+        .augmented-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .augmented-container .image-container {
+            width: 30%;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <h1>Diabetic Retinopathy Detection Result</h1>
+    <div class="container">
+        <div class="left-side">
+            <h2>Preprocessed Image</h2>
+            <div class="image-container">
+                <img src="data:image/png;base64,{{ preprocessed_image }}" alt="Preprocessed Image">
+            </div>
+
+            <h2>Augmented Images</h2>
+            <div class="augmented-container">
+                {% for image in augmented_images %}
+                <div class="image-container">
+                    <img src="data:image/png;base64,{{ image }}" alt="Augmented Image {{ loop.index }}">
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="right-side">
+            <h2>Prediction</h2>
+            <p>DR Level: {{ predicted_class }}</p>
+            <p>Predicted Class: {{ dr_levels[predicted_class] }}</p>
+        </div>
+    </div>
+</body>
+</html>
